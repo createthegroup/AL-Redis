@@ -71,9 +71,15 @@ namespace AngiesList.Redis
 
 		private bool RequiresSessionState(HttpContextBase context)
 		{
-			if (context.Session != null && (context.Session.Mode == null || context.Session.Mode == SessionStateMode.Off)) {
+			if (context.Session != null && (context.Session.Mode == SessionStateMode.Off)) {
 				return false;
 			}
+
+            if (context.Items["DisableSessionUpdateTimeout"] != null && context.Items["DisableSessionUpdateTimeout"].Equals("1"))
+            {
+                return false;
+            }
+
 			return (context.Handler is IRequiresSessionState ||
 				context.Handler is IReadOnlySessionState);
 		}
