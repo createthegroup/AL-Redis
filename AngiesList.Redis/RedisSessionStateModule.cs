@@ -7,6 +7,7 @@ using System.Threading;
 using System.Configuration;
 using BookSleeve;
 using System.Threading.Tasks;
+using Redis;
 
 namespace AngiesList.Redis
 {
@@ -17,8 +18,8 @@ namespace AngiesList.Redis
 		private bool releaseCalled = false;
 		private ISessionIDManager sessionIDManager;
 
+        private static RedisSessionStateConfiguration redisConfig;
 		private RedisConnection redisConnection;
-        private RedisSessionStateConfiguration redisConfig;
 
 
 		public void Init(HttpApplication app)
@@ -37,8 +38,8 @@ namespace AngiesList.Redis
 						// Create a SessionIDManager.
 						sessionIDManager = new SessionIDManager();
 						sessionIDManager.Initialize();
-						
-						redisConnection = new RedisConnection(redisConfig.Host, redisConfig.Port);
+
+                        redisConnection = GetRedisConnection();
 
 						initialized = true;
 					}
@@ -48,19 +49,7 @@ namespace AngiesList.Redis
 
 		private RedisConnection GetRedisConnection()
 		{
-			if (redisConnection.NeedsReset()) {
-				lock (typeof(RedisSessionStateModule)) {
-					if (redisConnection.NeedsReset()) {
-
-                        redisConnection = new RedisConnection(redisConfig.Host, redisConfig.Port);
-						redisConnection.Closed += (object sender, EventArgs e) => {
-							//Debug.WriteLine("redisConnection closed");
-						};
-						redisConnection.Open();
-					}
-				}
-			}
-			return redisConnection;
+            return RedisConnectionGateway.Current.GetConnection(redisConfig.Host, redisConfig.Port);
 		}
 
 
