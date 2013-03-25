@@ -53,26 +53,26 @@ namespace AngiesList.Redis
             {
                 if (expireSeconds.HasValue && expireSeconds.Value > 0)
                 {
-                    connection.SetWithExpiry(0, key, expireSeconds.Value, (String)value);
+                    connection.Strings.Set(0, key, expireSeconds.Value, (String)value);
                 }
-                else { connection.Set(0, key, (String)value); }
+                else { connection.Strings.Set(0, key, (String)value); }
             }
             else if (value is Byte[])
             {
                 if (expireSeconds.HasValue && expireSeconds.Value > 0)
                 {
-                    connection.SetWithExpiry(0, key, expireSeconds.Value, (Byte[])value);
+                    connection.Strings.Set(0, key, expireSeconds.Value, (Byte[])value);
                 }
-                else { connection.Set(0, key, (Byte[])value); }
+                else { connection.Strings.Set(0, key, (Byte[])value); }
             }
             else
             {
                 var bytes = cacheItemSerializer.Serialize(value);
                 if (expireSeconds.HasValue && expireSeconds.Value > 0)
                 {
-                    connection.SetWithExpiry(0, key, expireSeconds.Value, bytes);
+                    connection.Strings.Set(0, key, expireSeconds.Value, bytes);
                 }
-                else { connection.Set(0, key, bytes); }
+                else { connection.Strings.Set(0, key, bytes); }
             }
         }
 
@@ -84,25 +84,25 @@ namespace AngiesList.Redis
                 tmp = keys[i];
                 keys[i] = KeyForBucket(tmp);
             }
-            GetConnection().Remove(0, keys);
+            GetConnection().Keys.Remove(0, keys);
         }
 
         public override void Del(string key)
         {
             key = KeyForBucket(key);
-            GetConnection().Remove(0, key);
+            GetConnection().Keys.Remove(0, key);
         }
 
         public override void Expire(string key, int expireSeconds)
         {
             key = KeyForBucket(key);
-            GetConnection().Expire(0, key, expireSeconds);
+            GetConnection().Keys.Expire(0, key, expireSeconds);
         }
 
         public override void GetString(string key, Action<string, Exception> cb)
         {
             key = KeyForBucket(key);
-            var returnHandle = GetConnection().GetString(0, key);
+            var returnHandle = GetConnection().Strings.GetString(0, key);
             returnHandle.ContinueWith(t =>
             {
                 cb(t.Result, t.Exception);
@@ -113,7 +113,7 @@ namespace AngiesList.Redis
         {
             key = KeyForBucket(key);
             var connection = GetConnection();
-            var returnHandle = connection.GetString(0, key);
+            var returnHandle = connection.Strings.GetString(0, key);
             var value = connection.Wait<string>(returnHandle);
             return value;
         }
@@ -121,7 +121,7 @@ namespace AngiesList.Redis
         public override void GetRaw(string key, Action<byte[], Exception> cb)
         {
             key = KeyForBucket(key);
-            var returnHandle = GetConnection().Get(0, key);
+            var returnHandle = GetConnection().Strings.Get(0, key);
             returnHandle.ContinueWith(t =>
             {
                 cb(t.Result, t.Exception);
@@ -132,7 +132,7 @@ namespace AngiesList.Redis
         {
             key = KeyForBucket(key);
             var connection = GetConnection();
-            var returnHandle = connection.Get(0, key);
+            var returnHandle = connection.Strings.Get(0, key);
             var bytes = connection.Wait<byte[]>(returnHandle);
             return bytes;
         }

@@ -44,8 +44,8 @@ namespace AngiesList.Redis
 		private Dictionary<string, byte[]> GetRawItems()
 		{
 			if (rawItems == null) {
-				rawItems = redis.Hashes.GetAll(0, GetKeyForSession()).Result;
-				OneTimeResetTimeout();
+                rawItems = redis.Hashes.GetAll(0, GetKeyForSession()).Result;
+                ResetTimeout();
 			}
 			return rawItems;
 		}
@@ -122,10 +122,13 @@ namespace AngiesList.Redis
 			var itemsToSet = new Dictionary<string, byte[]>(1);
 			itemsToSet.Add(VALUE_PREFIX+name, bytes);
 			//itemsToSet.Add(TYPE_PREFIX+name, Encoding.ASCII.GetBytes(value.GetType().AssemblyQualifiedName));
-			var setTask = redis.Hashes.Set(0, GetKeyForSession(), itemsToSet);
-			SetTasks.Add(setTask);
 
-			OneTimeResetTimeout();
+            var setTask = redis.Hashes.Set(0, GetKeyForSession(), itemsToSet);
+            // make sure to expire after every set. Set commands in Redis clear the TTL
+            setTask.ContinueWith(t => ResetTimeout());
+
+			SetTasks.Add(setTask);
+            
 
 			if (rawItems.ContainsKey(VALUE_PREFIX + name)) {
 				rawItems[VALUE_PREFIX + name] = bytes;
@@ -169,14 +172,10 @@ namespace AngiesList.Redis
 			}
 		}
 
-		private bool timeoutReset;
-		private void OneTimeResetTimeout()
-		{
-			if (!timeoutReset) {
-				redis.Keys.Expire(0, GetKeyForSession(), timeoutMinutes * 60);
-				timeoutReset = true;
-			}
-		}
+        private Task<bool> ResetTimeout()
+        {
+            return redis.Keys.Expire(0, GetKeyForSession(), timeoutMinutes * 60);
+        }
 
 		public object this[string name]
 		{
