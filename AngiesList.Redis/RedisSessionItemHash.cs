@@ -9,12 +9,12 @@ using System.Threading;
 using System.Collections.Specialized;
 using System.IO;
 using System.Threading.Tasks;
+using Redis;
 
 namespace AngiesList.Redis
 {
 	public sealed class RedisSessionItemHash : NameObjectCollectionBase,  ISessionStateItemCollection
 	{
-		private RedisConnection redis;
 		private string sessionId;
 		private int timeoutMinutes;
 
@@ -26,14 +26,18 @@ namespace AngiesList.Redis
 		private const string TYPE_PREFIX = "__CLR_TYPE__";
 		private const string VALUE_PREFIX = "val:";
 
-		public RedisSessionItemHash(string sessionId, int timeoutMinutes, RedisConnection redisConnection)
+		public RedisSessionItemHash(string sessionId, int timeoutMinutes)
 			: base()
 		{
 			this.sessionId = sessionId;
 			this.timeoutMinutes = timeoutMinutes;
-			this.redis = redisConnection;
+			
 			SetTasks = new List<Task>();
 		}
+
+        private RedisConnection GetRedisConnection(){
+            return RedisConnectionGateway.Current.GetConnection();
+        }
 
 		private string GetKeyForSession()
 		{
@@ -44,7 +48,7 @@ namespace AngiesList.Redis
 		private Dictionary<string, byte[]> GetRawItems()
 		{
 			if (rawItems == null) {
-                rawItems = redis.Hashes.GetAll(0, GetKeyForSession()).Result;
+                rawItems = GetRedisConnection().Hashes.GetAll(0, GetKeyForSession()).Result;
                 ResetTimeout();
 			}
 			return rawItems;
@@ -123,7 +127,7 @@ namespace AngiesList.Redis
 			itemsToSet.Add(VALUE_PREFIX+name, bytes);
 			//itemsToSet.Add(TYPE_PREFIX+name, Encoding.ASCII.GetBytes(value.GetType().AssemblyQualifiedName));
 
-            var setTask = redis.Hashes.Set(0, GetKeyForSession(), itemsToSet);
+            var setTask = GetRedisConnection().Hashes.Set(0, GetKeyForSession(), itemsToSet);
             // make sure to expire after every set. Set commands in Redis clear the TTL
             setTask.ContinueWith(t => ResetTimeout());
 
@@ -174,7 +178,7 @@ namespace AngiesList.Redis
 
         private Task<bool> ResetTimeout()
         {
-            return redis.Keys.Expire(0, GetKeyForSession(), timeoutMinutes * 60);
+            return GetRedisConnection().Keys.Expire(0, GetKeyForSession(), timeoutMinutes * 60);
         }
 
 		public object this[string name]
@@ -189,13 +193,13 @@ namespace AngiesList.Redis
 
 		public void Clear()
 		{
-			redis.Keys.Remove(0, GetKeyForSession());
+			GetRedisConnection().Keys.Remove(0, GetKeyForSession());
 			BaseClear();
 		}
 
 		public void Remove(string name)
 		{
-			redis.Hashes.Remove(0, GetKeyForSession(), name);
+			GetRedisConnection().Hashes.Remove(0, GetKeyForSession(), name);
 			BaseRemove(name);
 		}
 

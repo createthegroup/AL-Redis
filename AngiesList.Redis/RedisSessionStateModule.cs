@@ -49,7 +49,7 @@ namespace AngiesList.Redis
 
 		private RedisConnection GetRedisConnection()
 		{
-            return RedisConnectionGateway.Current.GetConnection(redisConfig.Host, redisConfig.Port);
+            return RedisConnectionGateway.Current.GetConnection();
 		}
 
 
@@ -102,7 +102,7 @@ namespace AngiesList.Redis
 
 			releaseCalled = false;
 
-			sessionItemCollection = new RedisSessionItemHash(sessionId, redisConfig.SessionTimeout, GetRedisConnection());
+			sessionItemCollection = new RedisSessionItemHash(sessionId, redisConfig.SessionTimeout);
 
 			if (sessionItemCollection.Count == 0) {
 				isNew = true;

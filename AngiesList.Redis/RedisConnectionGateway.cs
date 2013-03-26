@@ -45,13 +45,13 @@ namespace Redis
             return new RedisConnection(host, port, syncTimeout: 5000, ioTimeout: 5000);
         }
 
-        public RedisConnection GetConnection(string host, int port)
+        public RedisConnection GetConnection()
         {
             lock (syncConnectionLock)
             {
                 redisConfig = RedisSessionStateConfiguration.GetConfiguration();
                 if (_connection == null)
-                    _connection = getNewConnection(host, port);
+                    _connection = getNewConnection(redisConfig.Host, redisConfig.Port);
 
                 if (_connection.State == RedisConnectionBase.ConnectionState.Opening)
                     return _connection;
@@ -60,7 +60,7 @@ namespace Redis
                 {
                     try
                     {
-                        _connection = getNewConnection(host, port);
+                        _connection = getNewConnection(redisConfig.Host, redisConfig.Port);
                     }
                     catch (Exception ex)
                     {
