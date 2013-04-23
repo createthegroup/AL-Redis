@@ -10,7 +10,7 @@ namespace Redis
         private const string RedisConnectionFailed = "Redis connection failed.";
         private RedisConnection _connection;
         private static volatile RedisConnectionGateway _instance;
-        private static RedisSessionStateConfiguration redisConfig;
+        private static RedisSessionStateConfiguration _redisConfig;
 
         private static object syncLock = new object();
         private static object syncConnectionLock = new object();
@@ -25,8 +25,8 @@ namespace Redis
                     {
                         if (_instance == null)
                         {
-                            redisConfig = RedisSessionStateConfiguration.GetConfiguration();
-                            _instance = new RedisConnectionGateway(redisConfig.Host, redisConfig.Port);
+                            _redisConfig = RedisSessionStateConfiguration.GetConfiguration();
+                            _instance = new RedisConnectionGateway(_redisConfig.Host, _redisConfig.Port);
                         }
                     }
                 }
@@ -49,9 +49,9 @@ namespace Redis
         {
             lock (syncConnectionLock)
             {
-                redisConfig = RedisSessionStateConfiguration.GetConfiguration();
+                _redisConfig = RedisSessionStateConfiguration.GetConfiguration();
                 if (_connection == null)
-                    _connection = getNewConnection(redisConfig.Host, redisConfig.Port);
+                    _connection = getNewConnection(_redisConfig.Host, _redisConfig.Port);
 
                 if (_connection.State == RedisConnectionBase.ConnectionState.Opening)
                     return _connection;
@@ -60,7 +60,7 @@ namespace Redis
                 {
                     try
                     {
-                        _connection = getNewConnection(redisConfig.Host, redisConfig.Port);
+                        _connection = getNewConnection(_redisConfig.Host, _redisConfig.Port);
                     }
                     catch (Exception ex)
                     {

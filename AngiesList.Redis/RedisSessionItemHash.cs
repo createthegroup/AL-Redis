@@ -26,6 +26,8 @@ namespace AngiesList.Redis
 		private const string TYPE_PREFIX = "__CLR_TYPE__";
 		private const string VALUE_PREFIX = "val:";
 
+	    private RedisConnection connection;
+
 		public RedisSessionItemHash(string sessionId, int timeoutMinutes)
 			: base()
 		{
@@ -33,11 +35,8 @@ namespace AngiesList.Redis
 			this.timeoutMinutes = timeoutMinutes;
 			
 			SetTasks = new List<Task>();
+		    connection = RedisConnectionGateway.Current.GetConnection();
 		}
-
-        private RedisConnection GetRedisConnection(){
-            return RedisConnectionGateway.Current.GetConnection();
-        }
 
 		private string GetKeyForSession()
 		{
@@ -48,7 +47,7 @@ namespace AngiesList.Redis
 		private Dictionary<string, byte[]> GetRawItems()
 		{
 			if (rawItems == null) {
-                rawItems = GetRedisConnection().Hashes.GetAll(0, GetKeyForSession()).Result;
+                rawItems = connection.Hashes.GetAll(0, GetKeyForSession()).Result;
                 ResetTimeout();
 			}
 			return rawItems;
@@ -127,7 +126,7 @@ namespace AngiesList.Redis
 			itemsToSet.Add(VALUE_PREFIX+name, bytes);
 			//itemsToSet.Add(TYPE_PREFIX+name, Encoding.ASCII.GetBytes(value.GetType().AssemblyQualifiedName));
 
-            var setTask = GetRedisConnection().Hashes.Set(0, GetKeyForSession(), itemsToSet);
+            var setTask = connection.Hashes.Set(0, GetKeyForSession(), itemsToSet);
             // make sure to expire after every set. Set commands in Redis clear the TTL
             setTask.ContinueWith(t => ResetTimeout());
 
@@ -178,7 +177,7 @@ namespace AngiesList.Redis
 
         private Task<bool> ResetTimeout()
         {
-            return GetRedisConnection().Keys.Expire(0, GetKeyForSession(), timeoutMinutes * 60);
+            return connection.Keys.Expire(0, GetKeyForSession(), timeoutMinutes * 60);
         }
 
 		public object this[string name]
@@ -193,13 +192,13 @@ namespace AngiesList.Redis
 
 		public void Clear()
 		{
-			GetRedisConnection().Keys.Remove(0, GetKeyForSession());
+			connection.Keys.Remove(0, GetKeyForSession());
 			BaseClear();
 		}
 
 		public void Remove(string name)
 		{
-			GetRedisConnection().Hashes.Remove(0, GetKeyForSession(), name);
+			connection.Hashes.Remove(0, GetKeyForSession(), name);
 			BaseRemove(name);
 		}
 

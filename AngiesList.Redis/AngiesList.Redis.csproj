@@ -50,7 +50,7 @@
   <ItemGroup>
     <Reference Include="BookSleeve, Version=1.2.0.8, Culture=neutral, PublicKeyToken=9056fda458ff61cf, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\BookSleeve.1.2.0.8\lib\BookSleeve.dll</HintPath>
+      <HintPath>..\packages\BookSleeve.Source\BookSleeve.dll</HintPath>
     </Reference>
     <Reference Include="ServiceStack.Text">
       <HintPath>..\packages\ServiceStack.Text.3.0.6\lib\net35\ServiceStack.Text.dll</HintPath>

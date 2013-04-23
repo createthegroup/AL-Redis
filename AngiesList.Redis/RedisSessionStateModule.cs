@@ -47,7 +47,7 @@ namespace AngiesList.Redis
 			}
 		}
 
-		private RedisConnection GetRedisConnection()
+		private static RedisConnection GetRedisConnection()
 		{
             return RedisConnectionGateway.Current.GetConnection();
 		}

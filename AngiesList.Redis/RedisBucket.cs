@@ -26,19 +26,22 @@ namespace AngiesList.Redis
         }
 
         private object _getConnectionLock = new object();
+
         private RedisConnection GetConnection()
         {
-			  if (connection.NeedsReset()) {
-                  lock (_getConnectionLock)
+            if (GetConnection().NeedsReset())
+            {
+                lock (_getConnectionLock)
                 {
-                    if (connection.NeedsReset())
+                    if (GetConnection().NeedsReset())
                     {
-                        if (connection != null) connection.Dispose();
+                        if (connection != null) GetConnection().Dispose();
                         connection = new RedisConnection(redisConfig.Host, redisConfig.Port);
-                        connection.Open();
-                        connection.Closed += (obj, args) => {
-                            GetConnection();
-                        };
+                        GetConnection().Open();
+                        GetConnection().Closed += (obj, args) =>
+                            {
+                                GetConnection();
+                            };
                     }
                 }
             }
@@ -48,31 +51,31 @@ namespace AngiesList.Redis
         public override void Set(string key, object value, int? expireSeconds = null)
         {
             key = KeyForBucket(key);
-            var connection = GetConnection();
+
             if (value is String)
             {
                 if (expireSeconds.HasValue && expireSeconds.Value > 0)
                 {
-                    connection.Strings.Set(0, key, expireSeconds.Value, (String)value);
+                    GetConnection().Strings.Set(0, key, expireSeconds.Value, (String)value);
                 }
-                else { connection.Strings.Set(0, key, (String)value); }
+                else { GetConnection().Strings.Set(0, key, (String)value); }
             }
             else if (value is Byte[])
             {
                 if (expireSeconds.HasValue && expireSeconds.Value > 0)
                 {
-                    connection.Strings.Set(0, key, expireSeconds.Value, (Byte[])value);
+                    GetConnection().Strings.Set(0, key, expireSeconds.Value, (Byte[])value);
                 }
-                else { connection.Strings.Set(0, key, (Byte[])value); }
+                else { GetConnection().Strings.Set(0, key, (Byte[])value); }
             }
             else
             {
                 var bytes = cacheItemSerializer.Serialize(value);
                 if (expireSeconds.HasValue && expireSeconds.Value > 0)
                 {
-                    connection.Strings.Set(0, key, expireSeconds.Value, bytes);
+                    GetConnection().Strings.Set(0, key, expireSeconds.Value, bytes);
                 }
-                else { connection.Strings.Set(0, key, bytes); }
+                else { GetConnection().Strings.Set(0, key, bytes); }
             }
         }
 
@@ -112,9 +115,8 @@ namespace AngiesList.Redis
         public override string GetStringSync(string key)
         {
             key = KeyForBucket(key);
-            var connection = GetConnection();
-            var returnHandle = connection.Strings.GetString(0, key);
-            var value = connection.Wait<string>(returnHandle);
+            var returnHandle = GetConnection().Strings.GetString(0, key);
+            var value = GetConnection().Wait<string>(returnHandle);
             return value;
         }
 
@@ -131,9 +133,8 @@ namespace AngiesList.Redis
         public override byte[] GetRawSync(string key)
         {
             key = KeyForBucket(key);
-            var connection = GetConnection();
-            var returnHandle = connection.Strings.Get(0, key);
-            var bytes = connection.Wait<byte[]>(returnHandle);
+            var returnHandle = GetConnection().Strings.Get(0, key);
+            var bytes = GetConnection().Wait<byte[]>(returnHandle);
             return bytes;
         }
 
@@ -168,7 +169,7 @@ namespace AngiesList.Redis
 
         public void Dispose()
         {
-            connection.Close(false);
+            GetConnection().Close(false);
         }
 
         private string KeyForBucket(string key)
